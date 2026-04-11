@@ -1,0 +1,35 @@
+import tensorflow as tf
+
+# =========================
+# WORD MODEL
+# =========================
+model = tf.keras.models.load_model("C:\\SignLanguage1\\word_mlp_model.h5")
+
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+tflite_model = converter.convert()
+
+open("C:\\SignLanguage1\\word_model.tflite","wb").write(tflite_model)
+
+
+# =========================
+# LETTERS MODEL
+# =========================
+model = tf.keras.models.load_model("C:\\SignLanguage1\\letters_mlp_model.h5")
+
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+tflite_model = converter.convert()
+
+open("C:\\SignLanguage1\\letters_model.tflite","wb").write(tflite_model)
+
+
+# =========================
+# NUMBERS MODEL
+# =========================
+model = tf.keras.models.load_model("C:\\SignLanguage1\\numbers_mlp_model.h5")
+
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+tflite_model = converter.convert()
+
+open("C:\\SignLanguage1\\numbers_model.tflite","wb").write(tflite_model)
+
+print("DONE: All models converted to TFLite")
