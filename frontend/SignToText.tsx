@@ -1,7 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -13,14 +13,13 @@ export default function SignToText() {
   const [accuracy, setAccuracy] = useState(0);
   const router = useRouter();
 
-  // 👇 هذا المهم: القيم إنجليزي
   const [mode, setMode] = useState("letters");
-
   const [cameraReady, setCameraReady] = useState(false);
   const [scanning, setScanning] = useState(false);
 
   const lastPrediction = useRef("");
   const repeatCount = useRef(0);
+  const changeCounter = useRef(0);
 
   useEffect(() => {
     requestPermission();
@@ -31,70 +30,85 @@ export default function SignToText() {
 
     const interval = setInterval(() => {
       scanSign();
-    }, 1000);
+    }, 800);
 
     return () => clearInterval(interval);
   }, [mode, cameraReady]);
 
+  const resetState = () => {
+    setResult("...");
+    setAccuracy(0);
+    repeatCount.current = 0;
+    lastPrediction.current = "";
+    changeCounter.current = 0;
+  };
+//اذا الكاميرا مو جاهزة  او طلب شغال وقف بحيث يوقف الضغط على السيرفر 
   const scanSign = async () => {
-    if (!cameraRef.current) return;
-    if (!cameraReady) return;
+    if (!cameraRef.current || !cameraReady) return;
+    if (scanning) return;
 
+    setScanning(true);
+//تقليل الجودة  == الارسال اسرع و السرفر يعالج اسرع
     try {
-      setScanning(true);
-
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.15,
+        quality: 0.1, 
         shutterSound: false,
       });
 
-      if (!photo?.uri) {
-        setScanning(false);
-        return;
-      }
+      if (!photo?.uri) return;
 
       const formData = new FormData();
 
-      formData.append(
-        "image",
-        {
-          uri: photo.uri,
-          name: "frame.jpg",
-          type: "image/jpeg",
-        } as any
-      );
+      formData.append("image", {
+        uri: photo.uri,
+        name: "frame.jpg",
+        type: "image/jpeg",
+      } as any);
 
-      // 👇 هنا نرسل المود الصحيح
       formData.append("mode", mode);
-
-      const response = await fetch("http://192.168.8.145:5000/predict", {
-        method: "POST",
-        body: formData,
-      });
-
+//predict == post
+      const response = await fetch("https://confetti-commodity-paper.ngrok-free.dev/predict", {
+  method: "POST",
+  body: formData,
+});
+//hserver return to json using form data
       const data = await response.json();
 
-      if (data.prediction) {
-        const newPrediction = data.prediction;
+      if (data.prediction === undefined || data.prediction === null) return;
+      if (data.prediction === "لا توجد يد") return;
 
-        if (newPrediction === lastPrediction.current) {
-          repeatCount.current += 1;
-        } else {
+      const newPrediction = data.prediction;
+//if its the same prediction as before increase repeat count and reset change counter
+      if (newPrediction === lastPrediction.current) {
+        repeatCount.current += 1;
+        changeCounter.current = 0;
+      } else {
+        changeCounter.current += 1;
+//if its not the same result 
+        if (changeCounter.current >= 4) {
+          setResult("لم يتم التعرف");
+          setAccuracy(0);
+          lastPrediction.current = "";
           repeatCount.current = 0;
-          lastPrediction.current = newPrediction;
+          return;
         }
 
-        if (repeatCount.current >= 2) {
-          setResult(newPrediction);
-
-          const fakeAccuracy = Math.floor(Math.random() * 6) + 94;
-          setAccuracy(fakeAccuracy);
-        }
+        repeatCount.current = 1;
+        lastPrediction.current = newPrediction;
       }
 
-      setScanning(false);
+      const threshold = mode === "words" ? 3 : 2;
+
+      if (repeatCount.current >= threshold) {
+        setResult(newPrediction);
+
+        const fakeAccuracy = Math.floor(Math.random() * 6) + 94;
+        setAccuracy(fakeAccuracy);
+      }
+
     } catch (error) {
       console.log("ERROR:", error);
+    } finally {
       setScanning(false);
     }
   };
@@ -113,31 +127,39 @@ export default function SignToText() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.logo}>نص إلى إشارة</Text>
+      <Text style={styles.logo}>إشارة إلى نص</Text>
 
       <Text style={styles.subtitle}>
         قم بعمل الإشارة أمام الكاميرا ليتم التعرف عليها
       </Text>
 
-      {/* 👇 الأزرار (UI عربي - القيم إنجليزي) */}
       <View style={styles.modeContainer}>
         <TouchableOpacity
           style={[styles.modeButton, mode === "letters" && styles.activeMode]}
-          onPress={() => setMode("letters")}
+          onPress={() => {
+            setMode("letters");
+            resetState();
+          }}
         >
           <Text style={styles.modeText}>الأحرف</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.modeButton, mode === "numbers" && styles.activeMode]}
-          onPress={() => setMode("numbers")}
+          onPress={() => {
+            setMode("numbers");
+            resetState();
+          }}
         >
           <Text style={styles.modeText}>الأرقام</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.modeButton, mode === "words" && styles.activeMode]}
-          onPress={() => setMode("words")}
+          onPress={() => {
+            setMode("words");
+            resetState();
+          }}
         >
           <Text style={styles.modeText}>الكلمات</Text>
         </TouchableOpacity>
@@ -168,87 +190,34 @@ export default function SignToText() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    paddingTop: 70,
-  },
-
-  topBar: {
-    width: "100%",
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-
-  logo: {
-    fontSize: 34,
-    fontWeight: "bold",
-    color: "white",
-  },
-
-  subtitle: {
-    color: "#d6c8ff",
-    marginBottom: 20,
-  },
-
-  modeContainer: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 20,
-  },
-
+  container: { flex: 1, alignItems: "center", paddingTop: 70 },
+  topBar: { width: "100%", paddingHorizontal: 20, marginBottom: 10 },
+  logo: { fontSize: 34, fontWeight: "bold", color: "white" },
+  subtitle: { color: "#d6c8ff", marginBottom: 20 },
+  modeContainer: { flexDirection: "row", gap: 10, marginBottom: 20 },
   modeButton: {
     backgroundColor: "rgba(255,255,255,0.15)",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
   },
-
-  activeMode: {
-    backgroundColor: "#7C3AED",
-  },
-
-  modeText: {
-    color: "white",
-    fontWeight: "600",
-  },
-
+  activeMode: { backgroundColor: "#7C3AED" },
+  modeText: { color: "white", fontWeight: "600" },
   cameraContainer: {
     width: 260,
     height: 300,
     borderRadius: 20,
     overflow: "hidden",
   },
-
-  camera: {
-    flex: 1,
-  },
-
-  scanStatus: {
-    color: "#bca9ff",
-    marginTop: 12,
-    fontSize: 13,
-  },
-
-  resultBox: {
-    marginTop: 30,
-    alignItems: "center",
-  },
-
-  resultLabel: {
-    color: "#c7b8ff",
-  },
-
+  camera: { flex: 1 },
+  scanStatus: { color: "#bca9ff", marginTop: 12, fontSize: 13 },
+  resultBox: { marginTop: 30, alignItems: "center" },
+  resultLabel: { color: "#c7b8ff" },
   resultText: {
     fontSize: 38,
     color: "white",
     fontWeight: "bold",
     marginTop: 5,
   },
-
-  confidenceText: {
-    color: "#d6c8ff",
-    fontSize: 16,
-    marginTop: 6,
-  },
+  confidenceText: { color: "#d6c8ff", fontSize: 16, marginTop: 6 },
 });
