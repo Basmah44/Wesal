@@ -74,11 +74,10 @@ word_interpreter, word_scaler, word_encoder = load_model_bundle(
     WORD_ENCODER_PATH
 )
 
-# 🔥 تحسين السرعة هنا
 mp_hands = mp.solutions.hands
 
 hands = mp_hands.Hands(
-    static_image_mode=False,   # 🚀 أهم تعديل
+    static_image_mode=False,   #  أهم تعديل
     max_num_hands=1,
     min_detection_confidence=0.6,
     min_tracking_confidence=0.6
@@ -178,5 +177,5 @@ def predict():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    print("Server running on http://192.168.8.145:5000")
+    print("Server running on http://192.168.8.210:5000")
     app.run(host="0.0.0.0", port=5000, debug=True)
