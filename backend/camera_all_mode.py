@@ -10,7 +10,7 @@ import numpy as np
 # ================== PATHS ==================
 IMAGES_DIR = r"C:\SignLanguage1\images"          # فولدر الصور الرئيسي (داخله فولدرات الكلاسات)
 OUT_CSV    = r"C:\SignLanguage1\all_landmarks_v2.csv"
-OUT_LABELS = r"C:\SignLanguage1\labels_ar.json"  # ملف ربط انجليزي -> عربي (انتي تسوينه/نولد قالب)
+OUT_LABELS = r"C:\SignLanguage1\labels_ar.json"  # 
 
 # ================== SETTINGS ==================
 STATIC_IMAGE_MODE = True
