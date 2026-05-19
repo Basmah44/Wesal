@@ -18,7 +18,6 @@ from sklearn.metrics import (
 )
 
 # ===============================
-# 🔹 غيري فقط هذا
 # ===============================
 MODE_NAME = "letters"  # letters / numbers / word
 
