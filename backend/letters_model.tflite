@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 
 # ===============================
-# 🔹 غيري هذا حسب المود
 # ===============================
 MODE_NAME = "letters"  # letters / numbers / word
 BASE_PATH = rf"C:\SignLanguage1\images\{MODE_NAME}"
