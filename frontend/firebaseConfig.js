@@ -15,6 +15,6 @@ const firebaseConfig = {
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// ✅ أهم شي: نصدّر auth + db
+//  أهم شي: نصدّر auth + db
 export const auth = getAuth(app);
 export const db = getFirestore(app);
